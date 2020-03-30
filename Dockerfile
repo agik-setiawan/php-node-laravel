@@ -3,8 +3,20 @@ FROM php:7.2.24-fpm-stretch
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-RUN apt-get update -y --allow-unauthenticated
-RUN apt-get install -y --allow-unauthenticated libaio-dev supervisor nano openssl unixodbc zip unzip git wget libfreetype6-dev libjpeg62-turbo-dev libpng-dev libldb-dev libldap2-dev
+RUN apt-get update -y
+RUN apt-get install -y --allow-unauthenticated gnupg2 apt-transport-https ca-certificates libaio-dev supervisor nano openssl unixodbc zip unzip git wget libfreetype6-dev libjpeg62-turbo-dev libpng-dev libldb-dev libldap2-dev unixodbc-dev
+
+
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+RUN curl https://packages.microsoft.com/config/debian/9/prod.list > /etc/apt/sources.list.d/mssql-release.list
+RUN apt-get update -y
+
+RUN ACCEPT_EULA=Y apt-get install -y --allow-unauthenticated msodbcsql17
+RUN ACCEPT_EULA=Y apt-get install -y --allow-unauthenticated mssql-tools
+RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
+RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+RUN /bin/bash -c "source ~/.bashrc"
+RUN apt-get install -y --allow-unauthenticated unixodbc-dev libgssapi-krb5-2
 
 
 RUN docker-php-ext-install zip
@@ -18,16 +30,6 @@ RUN cd /tmp && git clone https://github.com/git-ftp/git-ftp.git && cd git-ftp \
     && git checkout "$tag" \
     && mv git-ftp /usr/local/bin && chmod +x /usr/local/bin
 
-RUN curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
-RUN curl https://packages.microsoft.com/config/debian/9/prod.list > /etc/apt/sources.list.d/mssql-release.list
-RUN apt-get update -y --allow-unauthenticated
-RUN ACCEPT_EULA=Y apt-get install -y --allow-unauthenticated msodbcsql17
-RUN ACCEPT_EULA=Y apt-get install -y --allow-unauthenticated mssql-tools
-RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bash_profile
-RUN echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
-RUN source ~/.bashrc
-RUN apt-get install -y --allow-unauthenticated unixodbc-dev
-RUN apt-get install -y --allow-unauthenticated libgssapi-krb5-2
 
 RUN docker-php-ext-install sockets
 
@@ -39,3 +41,5 @@ RUN npm i -g yarn
 RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     rm -rf /tmp/* /var/tmp/*
+
+FROM 'nginx'
